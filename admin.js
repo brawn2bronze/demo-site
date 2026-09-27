@@ -447,8 +447,8 @@
     }
   }
 
-  function exportJson() {
-    var data = collect();
+  function exportJson(preCollected) {
+    var data = preCollected || collect();
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); state = data; } catch (e) { /* non-fatal */ }
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var a = document.createElement('a');
@@ -458,7 +458,45 @@
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     toast('data.json downloaded. Replace the site file to publish.');
-    // Future backend: await fetch('/api/data', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  }
+
+  /* ---------- Git Auto-Save via Netlify Function ---------- */
+  function publishViaGit(btn) {
+    var data;
+    try {
+      data = collect();
+    } catch (e) {
+      toast('Publish failed: could not collect form data.', 'error');
+      return;
+    }
+    var jsonString = JSON.stringify(data, null, 2);
+    try { localStorage.setItem(STORAGE_KEY, jsonString); state = data; } catch (e) { /* non-fatal */ }
+
+    var origText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
+
+    fetch('/.netlify/functions/update-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath: 'data.json', content: jsonString, message: 'Update via Admin Panel' })
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var payload = {};
+        try { payload = JSON.parse(text); } catch (e) { /* keep raw */ }
+        if (!res.ok || payload.success !== true) {
+          throw new Error((payload && payload.error) || ('Publish failed (' + res.status + ')'));
+        }
+        return payload;
+      });
+    }).then(function () {
+      toast('✅ Published! Site updating in background (~15s)', 'success');
+    }).catch(function (err) {
+      toast('Publish failed: ' + (err && err.message ? err.message : err), 'error');
+      // Download JSON fallback so no work is lost
+      try { exportJson(data); } catch (e) { /* ignore */ }
+    }).then(function () {
+      if (btn) { btn.disabled = false; btn.textContent = origText; }
+    });
   }
 
   function resetAll() {
@@ -545,7 +583,7 @@
     // Live print preview as any field changes
     document.querySelector('.admin-wrap').addEventListener('input', function () { renderPrintPreview(); });
     document.getElementById('btn-preview').addEventListener('click', preview);
-    document.getElementById('btn-export').addEventListener('click', exportJson);
+    document.getElementById('btn-export').addEventListener('click', function () { publishViaGit(this); });
     document.getElementById('btn-reset').addEventListener('click', resetAll);
     var doPrint = function () { state = collect(); renderPrintPreview(); window.print(); };
     var bp = document.getElementById('btn-print-preview');
@@ -560,12 +598,23 @@
   function escAttr(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
-  function toast(msg) {
+  function toast(msg, type) {
     var el = document.getElementById('toast');
     el.textContent = msg;
     el.classList.add('show');
+    // type: 'info' (default accent) | 'success' (green) | 'error' (red)
+    if (type === 'success') {
+      el.style.background = '#1a7f37';
+      el.style.color = '#fff';
+    } else if (type === 'error') {
+      el.style.background = '#b42318';
+      el.style.color = '#fff';
+    } else {
+      el.style.background = '';
+      el.style.color = '';
+    }
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, type === 'success' ? 5000 : 3200);
   }
 
   /* ---------- Boot ---------- */
