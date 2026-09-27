@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Command Center — Joe's Kitchen</title>
+  <script src="gate.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="flyer-theme.css" />
+  <style>
+    body { background: #14100b; }
+    .cc-wrap { width: min(100% - 2rem, 1020px); margin-inline: auto; padding: 1.2rem 0 8rem; }
+    .cc-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .cc-head h1 { margin: 0; font-size: 1.5rem; }
+    .cc-head p { margin: .2rem 0 0; color: var(--text-muted); font-size: .9rem; }
+    .cc-head nav { display: flex; gap: .6rem; flex-wrap: wrap; }
+    .cc-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .cc-grid { grid-template-columns: 1fr 1fr; } }
+    /* Builder + output live side-by-side */
+    .cc-flyer-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; align-items: start; }
+    @media (min-width: 980px) {
+      .cc-flyer-grid { grid-template-columns: 400px minmax(0, 1fr); }
+      #cc-flyer-card { position: sticky; top: 1rem; }
+    }
+    .cc-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+    .cc-card > h2 { margin: 0 0 .6rem; font-size: 1.1rem; }
+    .cc-line { display: flex; justify-content: space-between; gap: .8rem; padding: .35rem 0; border-bottom: 1px dashed var(--border); font-size: .92rem; }
+    .cc-line:last-child { border-bottom: 0; }
+    label { display: grid; gap: .3rem; font-size: .85rem; font-weight: 700; color: var(--text-muted); margin-bottom: .8rem; }
+    input, select, textarea { width: 100%; background: #1a140d; border: 1.5px solid var(--border); color: var(--text-primary); border-radius: 10px; padding: .65rem .8rem; font: inherit; font-weight: 400; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--text-accent); }
+    input[type="color"] { height: 42px; padding: .25rem .4rem; cursor: pointer; }
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--text-accent); }
+    .checkrow { display: flex; gap: 1rem; flex-wrap: wrap; margin: .2rem 0 .8rem; }
+    .checkrow label { display: flex; flex-direction: row; align-items: center; gap: .45rem; margin: 0; font-weight: 600; }
+    fieldset.cc-group { border: 1px solid var(--border); border-radius: 10px; padding: .8rem; margin: 0 0 .9rem; }
+    fieldset.cc-group legend { font-size: .8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 0 .5rem; color: var(--text-accent); }
+    .grid2 { display: grid; gap: 0 .9rem; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .btnrow { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .6rem; }
+    .btnrow .btn { flex: 1; min-width: 140px; cursor: pointer; }
+    .hint { color: var(--text-muted); font-size: .85rem; }
+    #toast { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%) translateY(-200%); background: var(--text-accent); color: var(--btn-text); font-weight: 800; padding: .7rem 1.2rem; border-radius: 999px; transition: transform .25s; z-index: 99; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    .tpl-card { display: flex; justify-content: space-between; align-items: center; gap: .8rem; border: 1px dashed var(--border); border-radius: 10px; padding: .7rem .8rem; margin-bottom: .6rem; }
+    .tpl-card small { display: block; color: var(--text-muted); font-weight: 400; }
+    .tpl-actions { display: flex; gap: .4rem; }
+    .tpl-actions button { background: transparent; border: 1.5px solid var(--border); color: var(--text-primary); border-radius: 999px; padding: .35rem .8rem; font-weight: 700; cursor: pointer; font-size: .82rem; }
+    .tpl-actions button:hover { border-color: var(--text-accent); color: var(--text-accent); }
+    .health-row { display: flex; gap: .6rem; align-items: baseline; padding: .3rem 0; font-size: .9rem; }
+
+    /* ---------- Flyer canvas (screen) ---------- */
+    #flyer-canvas { border-radius: 16px; overflow: hidden; border: 2px solid var(--border); position: relative; }
+    #flyer-canvas .flyer-inner { padding: 2.4rem 2rem 2rem; text-align: center; position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 560px; gap: .15rem; }
+    #flyer-canvas[data-align="left"] .flyer-inner { text-align: left; }
+    #flyer-canvas[data-align="left"] .flyer-top { justify-content: flex-start; }
+    #flyer-canvas[data-font="serif"] .flyer-inner { font-family: Georgia, "Times New Roman", serif; }
+    #flyer-canvas[data-font="display"] .flyer-inner { font-family: Impact, "Arial Black", system-ui, sans-serif; letter-spacing: .01em; }
+    #flyer-canvas[data-font="sans-bold"] .flyer-inner { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 800; }
+    #flyer-canvas[data-font="script"] .flyer-inner { font-family: "Brush Script MT", "Segoe Script", cursive; }
+    /* Custom background overrides theme (set via --flyer-bg-start/end/ink) */
+    #flyer-canvas[style*="--flyer-bg-start"] { background: linear-gradient(180deg, var(--flyer-bg-start), var(--flyer-bg-end, var(--flyer-bg-start))) !important; }
+    #flyer-canvas[style*="--flyer-ink"] { color: var(--flyer-ink) !important; }
+    /* Frame engine: style + width + color + radius vars */
+    #flyer-canvas[data-frame="solid"] .flyer-inner { border: var(--flyer-frame-width, 3px) solid var(--flyer-frame-color, currentColor); margin: 12px; min-height: 536px; border-radius: var(--flyer-frame-radius, 10px); }
+    #flyer-canvas[data-frame="double"] .flyer-inner { border: var(--flyer-frame-width, 6px) double var(--flyer-frame-color, currentColor); margin: 12px; min-height: 536px; border-radius: var(--flyer-frame-radius, 10px); }
+    #flyer-canvas[data-frame="thick"] .flyer-inner { border: var(--flyer-frame-width, 8px) solid var(--flyer-frame-color, currentColor); margin: 10px; min-height: 540px; border-radius: var(--flyer-frame-radius, 6px); }
+    #flyer-canvas[data-frame="dashed"] .flyer-inner { border: var(--flyer-frame-width, 3px) dashed var(--flyer-frame-color, currentColor); margin: 12px; min-height: 536px; border-radius: var(--flyer-frame-radius, 10px); }
+    #flyer-canvas[data-frame="dotted"] .flyer-inner { border: var(--flyer-frame-width, 4px) dotted var(--flyer-frame-color, currentColor); margin: 12px; min-height: 536px; border-radius: var(--flyer-frame-radius, 10px); }
+    #flyer-canvas[data-frame="shadow"] .flyer-inner { border: 0; margin: 14px; min-height: 532px; border-radius: var(--flyer-frame-radius, 16px); box-shadow: 0 0 0 var(--flyer-frame-width, 3px) var(--flyer-frame-color, currentColor), 0 18px 50px rgba(0,0,0,.45); }
+    input[type="range"] { accent-color: var(--text-accent); height: 32px; padding: 0 .2rem; }
+    #flyer-canvas[data-theme="chalk"] { background: radial-gradient(ellipse at 50% 30%, #2e2e2e, #1a1a1a); color: #faf5ec; }
+    #flyer-canvas[data-theme="chalk"] .flyer-head { color: var(--flyer-accent, #f6b93b); }
+    #flyer-canvas[data-theme="kraft"] { background: linear-gradient(180deg, #d9bc8d, #c9a87a); color: #2a1c0d; }
+    #flyer-canvas[data-theme="kraft"] .flyer-head { color: var(--flyer-accent, #2a1c0d); }
+    #flyer-canvas[data-theme="poster"] { background: linear-gradient(135deg, #f6b93b, #e07b39); color: #1a120b; }
+    #flyer-canvas[data-theme="poster"] .flyer-head { color: var(--flyer-accent, #1a120b); }
+    #flyer-canvas[data-theme="smoke"] { background: linear-gradient(180deg, #241a10, #120c07); color: #faf5ec; border-color: #f6b93b; }
+    #flyer-canvas[data-theme="smoke"] .flyer-head { color: var(--flyer-accent, #f6b93b); }
+    #flyer-canvas[data-theme="cream"] { background: #faf5ec; color: #2a1c0d; }
+    #flyer-canvas[data-theme="cream"] .flyer-head { color: var(--flyer-accent, #b34a1f); }
+    #flyer-canvas[data-theme="bbq-red"] { background: linear-gradient(135deg, #7a1f12, #b34a1f); color: #fff6e8; }
+    #flyer-canvas[data-theme="bbq-red"] .flyer-head { color: var(--flyer-accent, #ffd277); }
+    .flyer-top { display: flex; align-items: center; justify-content: center; gap: .7rem; margin-bottom: .9rem; }
+    .flyer-top strong { display: block; font-size: 1.05rem; }
+    .flyer-top small { display: block; font-size: .8rem; opacity: .8; }
+    .flyer-logo { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 12px; }
+    .flyer-logo-fallback { width: 56px; height: 56px; display: grid; place-items: center; font-size: 2rem; background: rgba(255,255,255,.12); border-radius: 12px; }
+    .flyer-photo { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; margin: .8rem 0; }
+    .flyer-photo[data-shape="banner"] { border-radius: 0; margin-inline: -2rem; width: calc(100% + 4rem); max-height: 220px; }
+    .flyer-photo[data-shape="circle"] { width: 200px; height: 200px; border-radius: 50%; margin-inline: auto; border: 4px solid currentColor; }
+    .flyer-kicker { font-weight: 800; letter-spacing: .14em; text-transform: uppercase; font-size: .85rem; opacity: .85; margin: .4rem 0; }
+    .flyer-badge { display: inline-block; align-self: center; background: var(--flyer-accent, #f6b93b); color: #1a120b; font-weight: 900; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; padding: .4rem 1rem; border-radius: 999px; transform: rotate(-2deg); margin: .3rem 0; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+    #flyer-canvas[data-align="left"] .flyer-badge { align-self: flex-start; }
+    .flyer-head { font-size: 2.6rem; line-height: 1.02; margin: .3rem 0; letter-spacing: -.015em; }
+    .flyer-head { font-size: var(--flyer-head-size, 2.6rem); color: var(--flyer-head-color, var(--flyer-accent, inherit)); }
+    .flyer-sub { font-size: 1.15rem; margin: .3rem auto; max-width: 36ch; }
+    .flyer-sub { font-size: var(--flyer-sub-size, 1.15rem); color: var(--flyer-sub-color, inherit); }
+    .flyer-price { font-size: 2.2rem; font-weight: 900; margin: .5rem 0; color: var(--flyer-accent, inherit); }
+    .flyer-price { font-size: var(--flyer-price-size, 2.2rem); color: var(--flyer-price-color, var(--flyer-accent, inherit)); }
+    .flyer-cta { display: inline-block; margin: .5rem auto 0; border: 2px solid currentColor; border-radius: 999px; padding: .55rem 1.3rem; font-weight: 800; }
+    .flyer-contact { font-size: .85rem; opacity: .8; margin-top: 1.2rem; border-top: 1px solid currentColor; padding-top: .7rem; }
+    .flyer-fine { font-size: .75rem; opacity: .7; margin: .4rem 0 0; }
+
+    /* ---------- Print: aesthetic, distributed, offline-safe ---------- */
+    @page { size: letter; margin: 0.4in; }
+    @media print {
+      body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cc-wrap .no-print, .cc-head nav, .btnrow, #toast { display: none !important; }
+      .cc-wrap { width: 100%; max-width: none; padding: 0; }
+      .cc-card { border: 0; padding: 0; }
+      #cc-preview-card, #cc-builder-card, #cc-templates-card, #cc-health-card { display: none !important; }
+      #cc-flyer-card { display: block !important; border: 0; position: static; }
+      #flyer-canvas { border: 0; border-radius: 0; }
+      #flyer-canvas .flyer-inner {
+        margin: 0 auto; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center;
+        padding: 0.7in 0.6in; gap: 0.12in;
+      }
+      body[data-flyer-size="poster"] #flyer-canvas .flyer-inner { width: 7.5in; min-height: 10in; }
+      body[data-flyer-size="poster"] .flyer-head { font-size: 52pt; }
+      body[data-flyer-size="poster"] .flyer-sub { font-size: 20pt; }
+      body[data-flyer-size="poster"] .flyer-price { font-size: 40pt; }
+      body[data-flyer-size="tent"] #flyer-canvas .flyer-inner { width: 10in; min-height: 7in; }
+      body[data-flyer-size="tent"] .flyer-head { font-size: 56pt; }
+      body[data-flyer-size="window"] #flyer-canvas .flyer-inner { width: 7.5in; min-height: 10in; }
+      body[data-flyer-size="window"] .flyer-head { font-size: 62pt; }
+      body[data-flyer-size="window"] #flyer-canvas { filter: contrast(1.1); }
+      .flyer-top { margin-bottom: 0.25in; }
+      .flyer-photo { max-height: 3.2in; margin: 0.2in 0; }
+      .flyer-kicker { letter-spacing: .2em; margin-bottom: 0.1in; }
+      .flyer-badge { margin: 0.12in 0; }
+      .flyer-contact { margin-top: auto; border-top-width: 2px; padding-top: 0.2in; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cc-wrap">
+    <div class="cc-head no-print">
+      <div>
+        <p class="eyebrow">Owner Only</p>
+        <h1>Command Center</h1>
+        <p>Preview + flyers + templates + health. PNG needs internet; Print works offline.</p>
+      </div>
+      <nav>
+        <a class="btn btn-ghost btn-sm" href="index.html">Storefront</a>
+        <a class="btn btn-ghost btn-sm" href="admin.html">Admin</a>
+      </nav>
+    </div>
+
+    <section id="cc-preview-card" class="cc-card no-print" aria-label="Live preview" style="margin-bottom:1rem">
+      <h2>1 · Live Preview</h2>
+      <div id="cc-preview" aria-live="polite"></div>
+      <p class="hint">Reads the same preview data as the storefront (LocalStorage → data.json).</p>
+    </section>
+
+    <div class="cc-flyer-grid">
+      <section id="cc-builder-card" class="cc-card no-print" aria-label="Flyer builder">
+        <h2>2 · Flyer Builder</h2>
+        <fieldset class="cc-group">
+          <legend>Message</legend>
+          <label>Kicker (small top label) <input id="y-kicker" type="text" placeholder="Every Week • The Rustic Fork Presents" /></label>
+          <label>Headline <input id="y-headline" type="text" placeholder="Taco Tuesday" /></label>
+          <label>Sub line <input id="y-sub" type="text" placeholder="3 street tacos + drink" /></label>
+          <div class="grid2">
+            <label>Price / offer <input id="y-price" type="text" placeholder="$9.99" /></label>
+            <label>Date / time <input id="y-date" type="text" placeholder="Tuesdays • 5–8pm" /></label>
+          </div>
+          <label>Badge / sticker (optional) <input id="y-badge" type="text" placeholder="While it lasts • No cover • Win dinner" /></label>
+          <label>Button / CTA line (optional) <input id="y-cta" type="text" placeholder="Call (555) 123-4567" /></label>
+          <label>Fine print (bottom small) <input id="y-fine" type="text" placeholder="Dine-in & takeout. While it lasts." /></label>
+        </fieldset>
+        <fieldset class="cc-group">
+          <legend>Style — theme background (like accent)</legend>
+          <div class="grid2">
+            <label>Theme preset (starting point — custom colors below override when enabled)
+              <select id="y-theme">
+                <option value="chalk">Chalkboard</option>
+                <option value="smoke">Smokehouse dark</option>
+                <option value="kraft">Kraft paper</option>
+                <option value="cream">Cream daytime</option>
+                <option value="poster">Bold poster</option>
+                <option value="bbq-red">BBQ red</option>
+                <option value="midnight-neon">Midnight neon</option>
+                <option value="citrus-punch">Citrus punch</option>
+                <option value="forest">Forest</option>
+                <option value="ocean">Ocean</option>
+              </select>
+            </label>
+            <label>Size (print)
+              <select id="y-layout">
+                <option value="poster">Poster (portrait)</option>
+                <option value="tent">Table tent (landscape)</option>
+                <option value="window">Window sign (bold)</option>
+              </select>
+            </label>
+          </div>
+          <label style="display:flex;flex-direction:row;align-items:center;gap:.5rem"><input id="y-usecustom" type="checkbox" style="width:18px;height:18px" /> Customize colors (override theme preset)</label>
+          <div class="grid2">
+            <label>Background pattern
+              <select id="y-pattern">
+                <option value="none">No pattern</option>
+                <option value="waves">Waves (wave ripples)</option>
+                <option value="paper">Textured paper</option>
+                <option value="ripples">Ripples</option>
+                <option value="dots">Dots</option>
+                <option value="stripes">Stripes</option>
+                <option value="smoke">Smoke</option>
+              </select>
+            </label>
+            <label>Pattern strength (<span id="y-patternopacity-val">18</span>%) <input id="y-patternopacity" type="range" min="0" max="60" step="1" value="18" /></label>
+          </div>
+          <div class="grid2">
+            <label>Background start (needs customize ON) <input id="y-bgstart" type="color" value="#2e2e2e" /></label>
+            <label>Background end (needs customize ON) <input id="y-bgend" type="color" value="#1a1a1a" /></label>
+          </div>
+          <div class="grid2">
+            <label>Body text color (needs customize ON) <input id="y-bgink" type="color" value="#faf5ec" /></label>
+            <label>Accent color (needs customize ON) <input id="y-accent" type="color" value="#f6b93b" /></label>
+          </div>
+          <div class="btnrow"><button id="btn-reset-theme" class="btn btn-ghost btn-sm" type="button">Reset background to theme</button></div>
+          <div class="checkrow">
+            <label><input id="y-show-logo" type="checkbox" checked /> Logo</label>
+            <label><input id="y-show-photo" type="checkbox" checked /> Photo</label>
+            <label><input id="y-show-contact" type="checkbox" checked /> Contact bar</label>
+          </div>
+        </fieldset>
+        <fieldset class="cc-group">
+          <legend>Frame — fully customizable</legend>
+          <div class="grid2">
+            <label>Frame style
+              <select id="y-frame">
+                <option value="none">No frame</option>
+                <option value="solid">Solid line</option>
+                <option value="double">Double line</option>
+                <option value="thick">Thick border</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="shadow">Rounded + shadow</option>
+              </select>
+            </label>
+            <label>Text align
+              <select id="y-align">
+                <option value="center">Center</option>
+                <option value="left">Left</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid2">
+            <label>Frame width (<span id="y-framewidth-val">6</span>px) <input id="y-framewidth" type="range" min="1" max="12" step="1" value="6" /></label>
+            <label>Frame corner (<span id="y-frameradius-val">10</span>px) <input id="y-frameradius" type="range" min="0" max="24" step="1" value="10" /></label>
+          </div>
+          <label>Frame color (needs customize ON) <input id="y-framecolor" type="color" value="#f6b93b" /></label>
+          <div class="grid2">
+            <label>Photo shape
+              <select id="y-photoshape">
+                <option value="rounded">Rounded card</option>
+                <option value="banner">Full-bleed banner</option>
+                <option value="circle">Circle badge</option>
+              </select>
+            </label>
+            <label>Photo alt (hidden) <input id="y-photoshape-note" type="text" disabled placeholder="shape applies to photo" /></label>
+          </div>
+        </fieldset>
+        <fieldset class="cc-group">
+          <legend>Fonts — size, style, color per element</legend>
+          <div class="grid2">
+            <label>Family
+              <select id="y-font">
+                <option value="system">System (clean)</option>
+                <option value="serif">Serif (classic)</option>
+                <option value="display">Display (loud)</option>
+                <option value="sans-bold">Sans bold (modern)</option>
+                <option value="script">Script (fun)</option>
+              </select>
+            </label>
+            <label>Headline color (needs customize ON) <input id="y-headcolor" type="color" value="#f6b93b" /></label>
+          </div>
+          <label>Headline size (<span id="y-headsize-val">Auto</span>, 0 = auto) <input id="y-headsize" type="range" min="0" max="80" step="1" value="0" /></label>
+          <div class="grid2">
+            <label>Sub size (<span id="y-subsize-val">Auto</span>, 0 = auto) <input id="y-subsize" type="range" min="0" max="36" step="1" value="0" /></label>
+            <label>Sub color (needs customize ON) <input id="y-subcolor" type="color" value="#faf5ec" /></label>
+          </div>
+          <div class="grid2">
+            <label>Price size (<span id="y-pricesize-val">Auto</span>, 0 = auto) <input id="y-pricesize" type="range" min="0" max="64" step="1" value="0" /></label>
+            <label>Price color (needs customize ON) <input id="y-pricecolor" type="color" value="#f6b93b" /></label>
+          </div>
+        </fieldset>
+        <fieldset class="cc-group">
+          <legend>Website — scheduled special</legend>
+          <label style="display:flex;flex-direction:row;align-items:center;gap:.5rem"><input id="y-show-website" type="checkbox" style="width:18px;height:18px" /> Show on website as scheduled special</label>
+          <div class="grid2">
+            <label>Start time <input id="y-start" type="time" value="11:00" /></label>
+            <label>End time <input id="y-end" type="time" value="21:00" /></label>
+          </div>
+          <div class="checkrow" id="y-days-row">
+            <label><input type="checkbox" data-day="Mon" checked /> Mon</label>
+            <label><input type="checkbox" data-day="Tue" checked /> Tue</label>
+            <label><input type="checkbox" data-day="Wed" checked /> Wed</label>
+            <label><input type="checkbox" data-day="Thu" checked /> Thu</label>
+            <label><input type="checkbox" data-day="Fri" checked /> Fri</label>
+            <label><input type="checkbox" data-day="Sat" checked /> Sat</label>
+            <label><input type="checkbox" data-day="Sun" checked /> Sun</label>
+          </div>
+          <p class="hint">Storefront shows this only on checked days + time window (visitor local time). Unchecked = flyer-only for social/print.</p>
+        </fieldset>
+        <fieldset class="cc-group">
+          <legend>Photo</legend>
+          <label>Photo path or URL (optional) <input id="y-image" type="text" placeholder="assets/flyers/taco.jpg or https://..." /></label>
+          <label>Photo alt <input id="y-alt" type="text" placeholder="Taco Tuesday special" /></label>
+          <p class="hint">Drop files into <code>assets/flyers/</code>, paste <code>assets/flyers/...</code> here. Hotlinks print fine; local files are safest for PNG.</p>
+        </fieldset>
+      </section>
+
+      <section id="cc-flyer-card" class="cc-card" aria-label="Flyer output">
+        <h2 class="no-print">3 · Flyer Output <small style="font-weight:400;font-size:.8rem">— live</small></h2>
+        <div id="flyer-canvas" data-theme="chalk" data-font="system" data-align="center" data-frame="none" data-pattern="none" role="img" aria-label="Flyer preview"></div>
+        <div class="btnrow no-print">
+          <button id="btn-export-png" class="btn btn-accent btn-sm" type="button">Download PNG</button>
+          <button id="btn-print-flyer" class="btn btn-ghost btn-sm" type="button">Print Flyer</button>
+        </div>
+        <p class="hint no-print">PNG = share online. Print = poster / window / table tent, works offline. Everything in the builder saves into templates.</p>
+      </section>
+    </div>
+
+    <div class="cc-grid" style="margin-top:1rem">
+      <div>
+        <section id="cc-templates-card" class="cc-card no-print" aria-label="Template library" style="margin-bottom:1rem">
+          <h2>4 · Template Library — <span id="template-count">No templates yet</span></h2>
+          <label>Save current as… <input id="y-template-name" type="text" placeholder="Taco Tuesday" /></label>
+          <div class="btnrow">
+            <button id="btn-save-template" class="btn btn-ghost btn-sm" type="button">Save as template</button>
+          </div>
+          <div id="template-list" style="margin-top:.8rem" aria-live="polite"></div>
+        </section>
+
+        <section id="cc-health-card" class="cc-card no-print" aria-label="Health checks">
+          <h2>5 · Health</h2>
+          <div id="health-list" aria-live="polite"></div>
+          <div class="btnrow">
+            <button id="btn-health" class="btn btn-ghost btn-sm" type="button">Re-check</button>
+            <button id="btn-export-json" class="btn btn-ghost btn-sm" type="button">Save &amp; Export JSON</button>
+            <button id="btn-reset" class="btn btn-ghost btn-sm" type="button">Reset</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="flyer.js" defer></script>
+</body>
+</html>

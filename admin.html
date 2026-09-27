@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin — Joe's Kitchen</title>
+  <script src="gate.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Admin-only utilitarian layer (reuses :root theme vars) */
+    body { background: #14100b; }
+    .admin-wrap { width: min(100% - 2rem, 900px); margin-inline: auto; padding: 1.2rem 0 8rem; }
+    .admin-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .admin-head h1 { margin: 0; font-size: 1.5rem; }
+    .admin-head p { margin: .2rem 0 0; color: var(--text-muted); font-size: .9rem; }
+    .admin-head nav { display: flex; gap: .6rem; }
+    .tabs { display: flex; gap: .5rem; overflow-x: auto; border-bottom: 1px solid var(--border); padding-bottom: .6rem; margin-bottom: 1.2rem; }
+    .tab-btn { background: transparent; border: 1.5px solid var(--border); color: var(--text-muted); border-radius: 999px; padding: .5rem 1rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .tab-btn.is-active { background: var(--text-accent); border-color: var(--text-accent); color: var(--btn-text); }
+    .tab-panel { display: none; }
+    .tab-panel.is-active { display: block; }
+    fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin: 0 0 1rem; background: var(--bg-card); }
+    legend { font-weight: 800; padding: 0 .5rem; }
+    label { display: grid; gap: .3rem; font-size: .85rem; font-weight: 700; color: var(--text-muted); margin-bottom: .8rem; }
+    input, textarea { width: 100%; background: #1a140d; border: 1.5px solid var(--border); color: var(--text-primary); border-radius: 10px; padding: .65rem .8rem; font: inherit; font-weight: 400; }
+    input:focus, textarea:focus { outline: none; border-color: var(--text-accent); }
+    textarea { min-height: 76px; resize: vertical; }
+    .grid2 { display: grid; gap: 0 .9rem; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .item-row { border: 1px dashed var(--border); border-radius: 10px; padding: .8rem; margin-bottom: .8rem; }
+    .row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+    .row-head strong { font-size: .9rem; }
+    .btn-danger { background: transparent; border: 1.5px solid #a33; color: #f0a0a0; border-radius: 999px; padding: .35rem .8rem; font-weight: 700; cursor: pointer; font-size: .82rem; }
+    .btn-danger:hover { border-color: #f00; color: #fff; }
+    .btn-add { background: transparent; border: 1.5px dashed var(--text-accent); color: var(--text-accent); border-radius: 10px; padding: .6rem; width: 100%; font-weight: 800; cursor: pointer; }
+    .btn-add:hover { background: rgba(246,185,59,.1); }
+    .actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(18,12,7,.97); border-top: 1px solid var(--border); padding: .7rem .9rem calc(.7rem + env(safe-area-inset-bottom)); }
+    .actionbar-inner { width: min(100% - 1rem, 900px); margin-inline: auto; display: flex; gap: .6rem; flex-wrap: wrap; }
+    .actionbar .btn { flex: 1; min-width: 140px; cursor: pointer; font-size: .95rem; }
+    #toast { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%) translateY(-200%); background: var(--text-accent); color: var(--btn-text); font-weight: 800; padding: .7rem 1.2rem; border-radius: 999px; transition: transform .25s; z-index: 99; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    .publish-banner { background: #fff3cd; color: #5c3d00; border: 2px solid #b34a1f; border-left: 8px solid #b34a1f; border-radius: 12px; padding: .9rem 1rem; margin-bottom: 1.2rem; font-size: .95rem; line-height: 1.45; }
+    .publish-banner strong { display: block; font-size: 1rem; margin-bottom: .25rem; }
+    .publish-banner code { background: rgba(0,0,0,.08); padding: .05rem .35rem; border-radius: 6px; }
+    .hint { color: var(--text-muted); font-size: .85rem; }
+    .preview-img { width: 100%; max-width: 320px; aspect-ratio: 4/3; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+    .print-sheet { background: #fff; color: #111; border-radius: 12px; padding: 2rem 2rem 1.6rem; max-width: 7.5in; margin-inline: auto; }
+    .print-sheet .ps-head { text-align: center; border-bottom: 3px double #111; padding-bottom: .8rem; margin-bottom: 1rem; }
+    .print-sheet img.print-logo { width: 72px; height: 72px; object-fit: contain; margin: 0 auto .3rem; }
+    .print-sheet h2 { margin: .3rem 0 .1rem; font-size: 2rem; letter-spacing: -.01em; }
+    .print-sheet .muted { color: #444; font-size: .9rem; margin: .2rem 0 0; }
+    .print-sheet h3 { margin: 1.2rem 0 .4rem; border-bottom: 2px solid #111; padding-bottom: .25rem; font-size: 1.05rem; letter-spacing: .04em; text-transform: uppercase; }
+    .print-sheet .ps-cols { column-gap: 2rem; }
+    @media (min-width: 600px) { .print-sheet .ps-cols { columns: 2; } }
+    .print-sheet .pi { display: flex; justify-content: space-between; gap: .8rem; padding: .35rem 0; font-size: .95rem; break-inside: avoid; border-bottom: 1px dotted #bbb; }
+    .print-sheet .pi span:last-child { font-weight: 800; white-space: nowrap; }
+    .print-sheet .pi small { display: block; color: #444; font-weight: 400; }
+    .print-sheet .ps-foot { margin-top: 1.4rem; border-top: 1px solid #111; padding-top: .6rem; text-align: center; font-size: .85rem; color: #333; }
+    @media print {
+      @page { size: letter; margin: 0.55in 0.6in 0.65in; }
+      body { background: #fff; }
+      .admin-wrap .tabs, .admin-head nav, .actionbar, #toast, .no-print-admin { display: none !important; }
+      .admin-wrap { width: 100%; max-width: none; padding: 0; }
+      .tab-panel { display: none !important; }
+      #tab-print { display: block !important; }
+      .print-sheet { border-radius: 0; padding: 0; max-width: none; }
+      .print-sheet .ps-cols { columns: 2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap">
+    <div class="admin-head">
+      <div>
+        <p class="eyebrow">Owner Only</p>
+        <h1>Site Admin</h1>
+        <p>Edits preview instantly via LocalStorage. Export to update <code>data.json</code>.</p>
+      </div>
+      <nav>
+        <a class="btn btn-ghost btn-sm" href="index.html">View Storefront</a>
+        <a class="btn btn-ghost btn-sm" href="command-center.html">Command Center</a>
+      </nav>
+    </div>
+
+    <div class="publish-banner" role="alert">
+      <strong>⚠️ Preview vs. Publish — read this first</strong>
+      <b>Preview on Storefront</b> = only you, only this browser (saved to LocalStorage). Visitors do NOT see it.<br />
+      <b>To publish:</b> 1. Preview → 2. <b>Save &amp; Export JSON</b> → 3. Replace <code>data.json</code> with the downloaded file → 4. Redeploy / re-upload.
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Admin sections">
+      <button class="tab-btn is-active" data-tab="info" role="tab" aria-selected="true">Business Info</button>
+      <button class="tab-btn" data-tab="menu" role="tab" aria-selected="false">Menu Manager</button>
+      <button class="tab-btn" data-tab="special" role="tab" aria-selected="false">Specials</button>
+      <button class="tab-btn" data-tab="events" role="tab" aria-selected="false">Events</button>
+      <button class="tab-btn" data-tab="gallery" role="tab" aria-selected="false">Gallery</button>
+      <button class="tab-btn" data-tab="text" role="tab" aria-selected="false">Site Text</button>
+      <button class="tab-btn" data-tab="print" role="tab" aria-selected="false">Print Preview</button>
+    </div>
+
+    <!-- TAB: Business Info -->
+    <section id="tab-info" class="tab-panel is-active" role="tabpanel">
+      <fieldset>
+        <legend>Business Info</legend>
+        <div class="grid2">
+          <label>Restaurant name <input id="f-name" type="text" /></label>
+          <label>Tagline <input id="f-tagline" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>Logo image path <input id="f-logo" type="text" placeholder="assets/logo/my-logo.png" /></label>
+          <label>Logo alt text <input id="f-logoAlt" type="text" placeholder="Restaurant logo" /></label>
+        </div>
+        <img id="logo-preview" class="preview-img" alt="Logo preview" loading="lazy" style="max-width:160px;aspect-ratio:1/1;object-fit:contain;background:#fff" />
+        <p class="hint">Drop files into <code>assets/logo/</code>, <code>assets/menu/</code>, <code>assets/gallery/</code>, <code>assets/storefront/</code> then paste the path here (e.g. <code>assets/logo/my-logo.png</code>). Hotlinks still work. Empty logo shows the ♨ placeholder.</p>
+        <label>Address <input id="f-address" type="text" /></label>
+        <div class="grid2">
+          <label>Phone display <input id="f-phone" type="text" /></label>
+          <label>Phone link (tel:) <input id="f-phoneHref" type="text" placeholder="tel:+15551234567" /></label>
+        </div>
+        <label>Directions URL <input id="f-directions" type="url" /></label>
+        <label>Hours short (hero line) <input id="f-hoursShort" type="text" /></label>
+        <label>Hours detail (one per line: Days | Time)
+          <textarea id="f-hours" rows="4" placeholder="Tue–Thu | 11am – 9pm"></textarea>
+        </label>
+      </fieldset>
+      <fieldset>
+        <legend>Hero (storefront top)</legend>
+        <label>Eyebrow <input id="h-eyebrow" type="text" placeholder="Cedar Hollow • Est. 2012 • Farm to Table" /></label>
+        <label>Headline (one line per row — last row highlighted)
+          <textarea id="h-headline" rows="3" placeholder="Real Smoke.&#10;Cold Drinks.&#10;No Fuss."></textarea>
+        </label>
+        <label>Sub line <textarea id="h-lede" rows="2" placeholder="Smoked brisket, smash burgers & pie..."></textarea></label>
+        <div class="grid2">
+          <label>Button 1 <input id="h-cta1" type="text" placeholder="View Menu" /></label>
+          <label>Button 2 <input id="h-cta2" type="text" placeholder="Hours & Directions" /></label>
+        </div>
+        <div class="grid2">
+          <label>Hero photo <input id="h-image" type="text" placeholder="assets/storefront/hero.jpg or https://..." /></label>
+          <label>Hero photo alt <input id="h-imageAlt" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>“Open” label <input id="h-openLabel" type="text" placeholder="Open today" /></label>
+          <label>“Kitchen closes” label <input id="h-closeLabel" type="text" placeholder="Kitchen closes" /></label>
+        </div>
+        <label>Kitchen close time <input id="h-closeTime" type="text" placeholder="8:30pm" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Social Links (footer — empty hides icon)</legend>
+        <div class="grid2">
+          <label>Facebook URL <input id="f-facebook" type="url" placeholder="https://facebook.com/..." /></label>
+          <label>Instagram URL <input id="f-instagram" type="url" placeholder="https://instagram.com/..." /></label>
+        </div>
+        <div class="grid2">
+          <label>X / Twitter URL <input id="f-twitter" type="url" placeholder="https://x.com/..." /></label>
+          <label>TikTok URL <input id="f-tiktok" type="url" placeholder="https://tiktok.com/@..." /></label>
+        </div>
+        <p class="hint">Icons appear in the footer only when a URL is filled. Top “Follow” button jumps to the footer and hides when all are empty.</p>
+      </fieldset>
+    </section>
+
+    <!-- TAB: Menu -->
+    <section id="tab-menu" class="tab-panel" role="tabpanel">
+      <p class="hint">Categories map to storefront filter chips via <code>id</code> (grill, smoke, sides, drinks). Prices are free text so "$5–$7" works.</p>
+      <div id="menu-editor"></div>
+      <button id="btn-add-cat" class="btn-add" type="button">+ Add Category</button>
+    </section>
+
+    <!-- TAB: Specials (scheduled rotation) -->
+    <section id="tab-special" class="tab-panel" role="tabpanel">
+      <p class="hint">Each special shows on its days + time window by default, but the storefront now has day chips + arrows so visitors can browse any day (e.g. view Saturday brisket on Sunday). Design artwork in Command Center → toggle “Show on website” there, or manage everything here. Times use 24h <code>HH:MM</code>.</p>
+      <div id="specials-editor"></div>
+      <button id="btn-add-special" class="btn-add" type="button">+ Add Special</button>
+    </section>
+
+    <!-- TAB: Events -->
+    <section id="tab-events" class="tab-panel" role="tabpanel">
+      <div id="events-editor"></div>
+      <button id="btn-add-event" class="btn-add" type="button">+ Add Event</button>
+    </section>
+
+    <!-- TAB: Gallery -->
+    <section id="tab-gallery" class="tab-panel" role="tabpanel">
+      <p class="hint">Storefront gallery. Paste <code>assets/gallery/...</code> or <code>assets/storefront/...</code> paths — no code changes needed later.</p>
+      <div id="gallery-editor"></div>
+      <button id="btn-add-photo" class="btn-add" type="button">+ Add Photo</button>
+    </section>
+
+    <!-- TAB: Site Text (every label on index.html) -->
+    <section id="tab-text" class="tab-panel" role="tabpanel">
+      <fieldset>
+        <legend>Top nav</legend>
+        <div class="grid2">
+          <label>Special <input id="t-nav-special" type="text" /></label>
+          <label>Events <input id="t-nav-events" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>Menu <input id="t-nav-menu" type="text" /></label>
+          <label>Gallery <input id="t-nav-gallery" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>Visit <input id="t-nav-visit" type="text" /></label>
+          <label>Call to Order <input id="t-nav-call" type="text" /></label>
+        </div>
+        <label>Follow (top button → footer) <input id="t-nav-follow" type="text" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Special banner chrome</legend>
+        <div class="grid2">
+          <label>Badge <input id="t-special-badge" type="text" /></label>
+          <label>Order button <input id="t-special-order" type="text" /></label>
+        </div>
+        <label>“Also today” label <input id="t-special-also" type="text" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Section headers — Menu / Gallery / Events</legend>
+        <p class="hint" style="margin:0 0 .8rem">These edit the storefront headers: <strong>Happenings / Nightly Fun at the Fork</strong> (Events), <strong>Our Menu / Simple. Hearty. Made Fresh.</strong> (Menu), <strong>The Joint / Warm Wood, Loud Laughs</strong> (Gallery). Edits preview live.</p>
+        <div class="grid2">
+          <label>Events eyebrow (e.g. Happenings) <input id="t-ev-eyebrow" type="text" /></label>
+          <label>Events title (e.g. Nightly Fun at the Fork) <input id="t-ev-title" type="text" /></label>
+        </div>
+        <label>Events button <input id="t-ev-cta" type="text" /></label>
+        <div class="grid2">
+          <label>Menu eyebrow (e.g. Our Menu) <input id="t-menu-eyebrow" type="text" /></label>
+          <label>Menu title (e.g. Simple. Hearty. Made Fresh.) <input id="t-menu-title" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>“All” chip <input id="t-menu-all" type="text" /></label>
+          <label>Print button <input id="t-menu-print" type="text" /></label>
+        </div>
+        <label>Menu note <input id="t-menu-note" type="text" /></label>
+        <div class="grid2">
+          <label>Gallery eyebrow (e.g. The Joint) <input id="t-gal-eyebrow" type="text" /></label>
+          <label>Gallery title (e.g. Warm Wood, Loud Laughs) <input id="t-gal-title" type="text" /></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Visit / map / footer / mobile</legend>
+        <div class="grid2">
+          <label>Find Us title <input id="t-visit-title" type="text" /></label>
+          <label>Get Directions <input id="t-visit-dir" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>Call / Order (visit card) <input id="t-visit-call" type="text" /></label>
+          <label>Map star <input id="t-map-star" type="text" /></label>
+        </div>
+        <label>Map text (HTML allowed: &lt;br /&gt;) <input id="t-map-text" type="text" /></label>
+        <label>Footer tagline <input id="t-foot-tag" type="text" /></label>
+        <div class="grid2">
+          <label>Bottom: Menu <input id="t-bn-menu" type="text" /></label>
+          <label>Bottom: Call <input id="t-bn-call" type="text" /></label>
+        </div>
+        <div class="grid2">
+          <label>Bottom: Events <input id="t-bn-events" type="text" /></label>
+          <label>Bottom: Location <input id="t-bn-location" type="text" /></label>
+        </div>
+        <label>Skip link <input id="t-skip" type="text" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>SEO / share text</legend>
+        <label>Meta description <textarea id="t-meta-desc" rows="2"></textarea></label>
+        <label>Share title <input id="t-og-title" type="text" /></label>
+        <label>Share description <input id="t-og-desc" type="text" /></label>
+      </fieldset>
+    </section>
+
+    <!-- TAB: Print Preview -->
+    <section id="tab-print" class="tab-panel" role="tabpanel">
+      <p class="hint">Live text-only preview (logo prints, food photos don't). Edits update as you type.</p>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem">
+        <button id="btn-print-preview" class="btn btn-accent btn-sm" type="button">Print Menu PDF</button>
+      </div>
+      <div id="print-preview" class="print-sheet" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <div class="actionbar">
+    <div class="actionbar-inner">
+      <button id="btn-preview" class="btn btn-ghost" type="button">Preview on Storefront</button>
+      <button id="btn-print-admin" class="btn btn-ghost" type="button">Print Menu</button>
+      <button id="btn-export" class="btn btn-accent" type="button">Save &amp; Export JSON</button>
+      <button id="btn-reset" class="btn btn-ghost" type="button" title="Clear LocalStorage and reload from data.json">Reset</button>
+    </div>
+  </div>
+
+  <script src="admin.js" defer></script>
+</body>
+</html>

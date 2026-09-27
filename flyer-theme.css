@@ -1,0 +1,64 @@
+/* Flyer themes + patterns — shared by Command Center flyer canvas and storefront special card */
+#flyer-canvas, #daily-special.flyer-styled { position: relative; }
+
+/* ---- 10 theme presets (bg + ink). Accent/ink overridable via --flyer-* vars ---- */
+#flyer-canvas[data-theme="chalk"], #daily-special.flyer-styled[data-theme="chalk"] { background: radial-gradient(ellipse at 50% 30%, #2e2e2e, #1a1a1a); color: #faf5ec; }
+#flyer-canvas[data-theme="smoke"], #daily-special.flyer-styled[data-theme="smoke"] { background: linear-gradient(180deg, #241a10, #120c07); color: #faf5ec; border-color: #f6b93b; }
+#flyer-canvas[data-theme="kraft"], #daily-special.flyer-styled[data-theme="kraft"] { background: linear-gradient(180deg, #d9bc8d, #c9a87a); color: #2a1c0d; }
+#flyer-canvas[data-theme="cream"], #daily-special.flyer-styled[data-theme="cream"] { background: #faf5ec; color: #2a1c0d; }
+#flyer-canvas[data-theme="poster"], #daily-special.flyer-styled[data-theme="poster"] { background: linear-gradient(135deg, #f6b93b, #e07b39); color: #1a120b; }
+#flyer-canvas[data-theme="bbq-red"], #daily-special.flyer-styled[data-theme="bbq-red"] { background: linear-gradient(135deg, #7a1f12, #b34a1f); color: #fff6e8; }
+#flyer-canvas[data-theme="midnight-neon"], #daily-special.flyer-styled[data-theme="midnight-neon"] { background: linear-gradient(135deg, #0f1023, #1e1b4b); color: #e0e7ff; border-color: #818cf8; }
+#flyer-canvas[data-theme="citrus-punch"], #daily-special.flyer-styled[data-theme="citrus-punch"] { background: linear-gradient(135deg, #f97316, #facc15); color: #1a120b; }
+#flyer-canvas[data-theme="forest"], #daily-special.flyer-styled[data-theme="forest"] { background: linear-gradient(180deg, #1a2e1a, #0d1a0d); color: #e8f5e9; }
+#flyer-canvas[data-theme="ocean"], #daily-special.flyer-styled[data-theme="ocean"] { background: linear-gradient(180deg, #0c4a6e, #082f49); color: #e0f2fe; }
+
+/* Headline uses accent by default per-theme */
+#flyer-canvas[data-theme="chalk"] .flyer-head, #daily-special.flyer-styled[data-theme="chalk"] .flyer-head,
+#flyer-canvas[data-theme="chalk"] .flyer-head, #daily-special.flyer-styled[data-theme="chalk"] h2 { color: var(--flyer-accent, #f6b93b); }
+#flyer-canvas[data-theme="smoke"] .flyer-head, #daily-special.flyer-styled[data-theme="smoke"] h2 { color: var(--flyer-accent, #f6b93b); }
+#flyer-canvas[data-theme="kraft"] .flyer-head, #daily-special.flyer-styled[data-theme="kraft"] h2 { color: var(--flyer-accent, #2a1c0d); }
+#flyer-canvas[data-theme="cream"] .flyer-head, #daily-special.flyer-styled[data-theme="cream"] h2 { color: var(--flyer-accent, #b34a1f); }
+#flyer-canvas[data-theme="poster"] .flyer-head, #daily-special.flyer-styled[data-theme="poster"] h2 { color: var(--flyer-accent, #1a120b); }
+#flyer-canvas[data-theme="bbq-red"] .flyer-head, #daily-special.flyer-styled[data-theme="bbq-red"] h2 { color: var(--flyer-accent, #ffd277); }
+#flyer-canvas[data-theme="midnight-neon"] .flyer-head, #daily-special.flyer-styled[data-theme="midnight-neon"] h2 { color: var(--flyer-accent, #a5b4fc); }
+#flyer-canvas[data-theme="citrus-punch"] .flyer-head, #daily-special.flyer-styled[data-theme="citrus-punch"] h2 { color: var(--flyer-accent, #7c2d12); }
+#flyer-canvas[data-theme="forest"] .flyer-head, #daily-special.flyer-styled[data-theme="forest"] h2 { color: var(--flyer-accent, #86efac); }
+#flyer-canvas[data-theme="ocean"] .flyer-head, #daily-special.flyer-styled[data-theme="ocean"] h2 { color: var(--flyer-accent, #7dd3fc); }
+
+/* Storefront flyer-styled card: keep layout, swap palette */
+#daily-special.flyer-styled { border: 2px solid var(--flyer-frame-color, rgba(0,0,0,.2)); overflow: hidden; }
+#daily-special.flyer-styled .special-body p { color: inherit; opacity: .9; }
+#daily-special.flyer-styled .special-tag { background: rgba(0,0,0,.18); }
+#daily-special.flyer-styled .special-badge { background: var(--flyer-accent, #221304); color: #1a120b; }
+
+/* ---- Pattern overlays (priority: waves, paper + variety) ---- */
+#flyer-canvas[data-pattern]:not([data-pattern="none"]) .flyer-inner::before,
+#daily-special.flyer-styled[data-pattern]:not([data-pattern="none"])::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  opacity: var(--flyer-pattern-opacity, .18);
+}
+#flyer-canvas[data-pattern="waves"] .flyer-inner::before, #daily-special.flyer-styled[data-pattern="waves"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='24' viewBox='0 0 120 24'%3E%3Cpath d='M0 12 Q 15 0 30 12 T 60 12 T 90 12 T 120 12' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E");
+  background-size: 120px 24px;
+}
+#flyer-canvas[data-pattern="ripples"] .flyer-inner::before, #daily-special.flyer-styled[data-pattern="ripples"]::before {
+  background-image: repeating-radial-gradient(circle at 50% 30%, rgba(255,255,255,.35) 0 2px, transparent 2px 18px);
+  background-size: auto;
+}
+#flyer-canvas[data-pattern="paper"] .flyer-inner::before, #daily-special.flyer-styled[data-pattern="paper"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+#flyer-canvas[data-pattern="dots"] .flyer-inner::before, #daily-special.flyer-styled[data-pattern="dots"]::before {
+  background-image: radial-gradient(rgba(255,255,255,.5) 1.5px, transparent 1.5px);
+  background-size: 18px 18px;
+}
+#flyer-canvas[data-pattern="stripes"] .flyer-inner::before, #daily-special.flyer-styled[data-pattern="stripes"]::before {
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.22) 0 2px, transparent 2px 14px);
+}
+#flyer-canvas[data-pattern="smoke"] .flyer-inner::before, #daily-special.flyer-styled[data-pattern="smoke"]::before {
+  background-image: radial-gradient(ellipse at 20% 20%, rgba(255,255,255,.25), transparent 60%), radial-gradient(ellipse at 80% 70%, rgba(0,0,0,.25), transparent 60%);
+}
+#flyer-canvas .flyer-inner { position: relative; }
+#flyer-canvas .flyer-inner > * { position: relative; z-index: 1; }
