@@ -461,7 +461,7 @@
   }
 
   /* ---------- Git Auto-Save via Netlify Function ---------- */
-  function publishViaGit(btn) {
+  async function publishViaGit(btn) {
     var data;
     try {
       data = collect();
@@ -475,28 +475,27 @@
     var origText = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
 
-    fetch('/.netlify/functions/update-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filePath: 'data.json', content: jsonString, message: 'Update via Admin Panel' })
-    }).then(function (res) {
-      return res.text().then(function (text) {
-        var payload = {};
-        try { payload = JSON.parse(text); } catch (e) { /* keep raw */ }
-        if (!res.ok || payload.success !== true) {
-          throw new Error((payload && payload.error) || ('Publish failed (' + res.status + ')'));
-        }
-        return payload;
+    try {
+      var res = await fetch('/.netlify/functions/update-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath: 'data.json', content: jsonString, message: 'Update via Admin Panel' })
       });
-    }).then(function () {
+      var text = await res.text();
+      var payload = {};
+      try { payload = JSON.parse(text); } catch (e) { /* keep raw */ }
+      if (!res.ok || payload.success !== true) {
+        throw new Error((payload && payload.error) || ('Publish failed (' + res.status + ')'));
+      }
+      // SUCCESS ONLY: green toast, re-enable in finally. No download.
       toast('✅ Published! Site updating in background (~15s)', 'success');
-    }).catch(function (err) {
+    } catch (err) {
+      // FAILURE ONLY: red toast, then local fallback so no work is lost.
       toast('Publish failed: ' + (err && err.message ? err.message : err), 'error');
-      // Download JSON fallback so no work is lost
       try { exportJson(data); } catch (e) { /* ignore */ }
-    }).then(function () {
+    } finally {
       if (btn) { btn.disabled = false; btn.textContent = origText; }
-    });
+    }
   }
 
   function resetAll() {
