@@ -40,9 +40,9 @@
       "name": "Off the Grill",
       "items": [
         {
-          "name": "TRIPLE Smash Burger",
+          "name": "Double Smash Burger",
           "price": "$15.99",
-          "description": "Three smashed patties, cheddar, pickles, house sauce, toasted bun.",
+          "description": "Two smashed patties, cheddar, pickles, house sauce, toasted bun.",
           "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=65&auto=format&fit=crop"
         },
         {
