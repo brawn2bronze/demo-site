@@ -490,9 +490,11 @@
       // SUCCESS ONLY: green toast, re-enable in finally. No download.
       toast('✅ Published! Site updating in background (~15s)', 'success');
     } catch (err) {
-      // FAILURE ONLY: red toast, then local fallback so no work is lost.
-      toast('Publish failed: ' + (err && err.message ? err.message : err), 'error');
-      try { exportJson(data); } catch (e) { /* ignore */ }
+      // FAILURE ONLY: red toast + blocking alert for debugging. Auto-download disabled for now.
+      var errMsg = (err && err.message ? err.message : err);
+      toast('Publish failed: ' + errMsg, 'error');
+      // try { exportJson(data); } catch (e) { /* ignore */ } // TEMP-DISABLED for debugging
+      alert('Publish Failed:\n\n' + (errMsg || 'Unknown error'));
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = origText; }
     }
@@ -613,7 +615,8 @@
       el.style.color = '';
     }
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('show'); }, type === 'success' ? 5000 : 3200);
+    var toastDuration = type === 'error' ? 10000 : (type === 'success' ? 5000 : 3200);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, toastDuration);
   }
 
   /* ---------- Boot ---------- */
